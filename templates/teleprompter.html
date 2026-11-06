@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title · Суфлёр</title>
+<style>
+* { box-sizing: border-box; }
+:root { color-scheme: dark; --size: 46px; }
+body { margin: 0; background: #151515; color: #faf5ea; font-family: system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem;
+  padding: .7rem 1rem; background: #242424; border-bottom: 1px solid #555; }
+label { display: inline-flex; align-items: center; gap: .5rem; }
+button { font: inherit; padding: .3em .7em; }
+main { max-width: 960px; padding: 8vh 4vw 55vh; margin: auto; font-size: var(--size); line-height: 1.42; }
+main.mirrored { transform: scaleX(-1); }
+h1 { font-size: 1em; }
+h2 { color: #f6a16b; font-size: .55em; }
+section + section { margin-top: 3em; }
+</style>
+</head>
+<body>
+<header>
+  <button id="play" type="button" aria-pressed="false">Пуск</button>
+  <label>Скорость <input id="speed" type="range" min="15" max="240" value="62"></label>
+  <label>Шрифт <input id="size" type="range" min="20" max="90" value="46"></label>
+  <label><input id="mirror" type="checkbox"> Зеркало</label>
+  <button id="reset" type="button">К началу</button>
+</header>
+<main id="script">
+<h1>$title</h1>
+$content
+</main>
+<script>
+const play = document.querySelector("#play");
+const speed = document.querySelector("#speed");
+let frame = null;
+let last = 0;
+let offset = 0;
+function tick(now) {
+  if (last) offset += Math.min(now - last, 100) * Number(speed.value) / 1000;
+  last = now;
+  window.scrollTo(0, offset);
+  if (offset >= document.documentElement.scrollHeight - innerHeight) stop();
+  else frame = requestAnimationFrame(tick);
+}
+function stop() {
+  if (frame !== null) cancelAnimationFrame(frame);
+  frame = null;
+  play.textContent = "Пуск";
+  play.setAttribute("aria-pressed", "false");
+}
+function toggle() {
+  if (frame !== null) { stop(); return; }
+  offset = scrollY;
+  last = 0;
+  play.textContent = "Пауза";
+  play.setAttribute("aria-pressed", "true");
+  frame = requestAnimationFrame(tick);
+}
+play.onclick = toggle;
+document.querySelector("#reset").onclick = () => { stop(); scrollTo(0, 0); };
+document.querySelector("#size").oninput = (event) => document.documentElement.style.setProperty("--size", event.target.value + "px");
+document.querySelector("#mirror").onchange = (event) => document.querySelector("#script").classList.toggle("mirrored", event.target.checked);
+window.addEventListener("keydown", (event) => {
+  if (event.code === "Space" && event.target === document.body) {
+    event.preventDefault();
+    toggle();
+  }
+});
+</script>
+</body>
+</html>

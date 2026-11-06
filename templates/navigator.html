@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title · Презентация</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #1e1e1e; color: #fff; font-family: system-ui, sans-serif; }
+html { scroll-snap-type: y mandatory; }
+.slide { height: 100vh; display: grid; grid-template-columns: 75fr 25fr; scroll-snap-align: start; }
+.stage { position: relative; display: grid; align-items: center; background: #1e1e1e; min-width: 0; }
+.stage-inner { width: 100%; max-width: 100%; padding: 5vh 5vw; }
+.stage-tag { color: #f6a16b; font-size: 2vh; letter-spacing: .16em; font-weight: 700; }
+.stage h2 { color: #f5e6d0; font-size: 6.4vh; line-height: 1.08; max-width: 19ch; margin: .4em 0 .65em; overflow-wrap: anywhere; }
+.points { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.3vh; counter-reset: point; }
+.points li { background: #262626; border-left: .25rem solid #e8762b; border-radius: 0 .35rem .35rem 0;
+  padding: 1.4vh 1.4vw; font-size: 3.05vh; line-height: 1.25; counter-increment: point; overflow-wrap: anywhere; }
+.points li::before { content: counter(point, decimal-leading-zero); font: .65em ui-monospace, monospace; margin-right: 1em; color: #f6a16b; }
+.stage-inner[data-kind="cover"] h2, .stage-inner[data-kind="cta"] h2 { font-size: 7.2vh; }
+.stage-inner[data-kind="cover"] .stage-tag, .stage-inner[data-kind="cta"] .stage-tag {
+  display: inline-block; padding: .55em .8em; background: #6a341b; border-radius: .25rem;
+}
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; list-style: none; padding: 0; }
+.duo li, figure, pre { margin: 0; padding: 2.2vh 1.5vw; background: #262626;
+  border-left: .3rem solid #e8762b; font-size: 3.2vh; line-height: 1.35; overflow-wrap: anywhere; }
+.duo li + li { border-left-color: #a3b85c; }
+blockquote { margin: 0; color: #f5e6d0; }
+figcaption { margin-top: .8rem; color: #f6a16b; font-size: .7em; }
+pre { white-space: pre-wrap; font-family: ui-monospace, monospace; }
+.cheat { min-width: 0; display: flex; flex-direction: column; background: #f5e6d0; color: #26211d;
+  border-left: .4rem solid #e8762b; padding: 5vh 2vw; overflow-wrap: anywhere; }
+.cheat-head { font-weight: 700; font-size: 2.7vh; line-height: 1.2; }
+.cheat-body { font-size: 2.1vh; line-height: 1.42; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+.cheat-body .cue { font-size: .85em; color: #71340f; font-weight: 700; }
+.cheat-next { margin-top: auto; color: #71340f; font-size: 1.9vh; }
+.controls { position: fixed; bottom: 1.4vh; left: 1vw; display: flex; gap: .4rem; align-items: center; font-size: 1rem; z-index: 2; }
+.controls button, .controls output { background: #262626; color: #f5e6d0; border: 1px solid #777; border-radius: .25rem; padding: .3rem .55rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .slide.is-current .stage-inner > *, .slide.is-current .points li, .slide.is-current .duo li { animation: reveal .45s both; }
+  .slide.is-current .stage-inner > :nth-child(2) { animation-delay: .08s; }
+  .slide.is-current .points li { animation-delay: .18s; }
+  .slide.is-current .points li:nth-child(2n) { animation-delay: .24s; }
+}
+@keyframes reveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<main>
+$content
+</main>
+<nav class="controls" aria-label="Управление слайдами">
+  <button id="previous" type="button" aria-label="Предыдущий слайд">←</button>
+  <output id="position" aria-live="polite"></output>
+  <button id="next" type="button" aria-label="Следующий слайд">→</button>
+  <button id="fullscreen" type="button" aria-label="Полный экран">⛶</button>
+</nav>
+<script>
+const slides = [...document.querySelectorAll(".slide")];
+const position = document.querySelector("#position");
+let current = 0;
+function select(index) {
+  current = Math.min(Math.max(index, 0), slides.length - 1);
+  slides.forEach((slide, number) => slide.classList.toggle("is-current", number === current));
+  position.value = (current + 1) + " / " + slides.length;
+}
+function go(index) {
+  select(index);
+  slides[current].scrollIntoView({behavior: "instant"});
+}
+function fullscreen() {
+  const action = document.fullscreenElement
+    ? document.exitFullscreen()
+    : document.documentElement.requestFullscreen?.();
+  action?.catch(() => {});
+}
+document.querySelector("#previous").onclick = () => go(current - 1);
+document.querySelector("#next").onclick = () => go(current + 1);
+document.querySelector("#fullscreen").onclick = fullscreen;
+window.addEventListener("keydown", (event) => {
+  if (event.altKey || event.metaKey || event.ctrlKey || event.target instanceof HTMLButtonElement) return;
+  const keys = {ArrowRight: 1, ArrowDown: 1, PageDown: 1, " ": 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1};
+  if (event.key in keys) go(current + keys[event.key]);
+  else if (event.key === "Home") go(0);
+  else if (event.key === "End") go(slides.length - 1);
+  else if (event.key.toLowerCase() === "f") fullscreen();
+  else return;
+  event.preventDefault();
+});
+const observer = new IntersectionObserver((entries) => {
+  for (const entry of entries) if (entry.intersectionRatio >= .75) select(slides.indexOf(entry.target));
+}, {threshold: .75});
+slides.forEach((slide) => observer.observe(slide));
+select(0);
+</script>
+</body>
+</html>
